@@ -18,6 +18,7 @@ import {
   JobOffer,
   GetJobOffersResponse,
 } from '@/api/vendor';
+import { router } from 'expo-router';
 
 /*
  * ============================================
@@ -142,9 +143,28 @@ export default function VendorJobsScreen(): React.JSX.Element {
     setProcessingId(offer.offer_id);
 
     try {
-      await acceptJobOffer(Number(offer.offer_id));
+      // Call acceptance endpoint
+      const response = await acceptJobOffer(Number(offer.offer_id));
+
+      // Remove accepted offer from current screen state
       setOffers((current) => current.filter((item) => item.offer_id !== offer.offer_id));
-      Alert.alert('Job Accepted', 'The job has been assigned to you.');
+
+      // Use returned booking_id (or fallback to offer.booking_id) for navigation
+      const targetBookingId = response.booking_id ?? offer.booking_number;
+
+      Alert.alert('Job Accepted', 'The job has been assigned to you.', [
+        {
+          text: 'View Job Details',
+          onPress: () => {
+            if (targetBookingId) {
+              router.push({
+                pathname: '/screens/trip-tracking', // Adjust route to your active job screen path
+                params: { id: String(targetBookingId) },
+              });
+            }
+          },
+        },
+      ]);
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       Alert.alert('Unable to Accept', message || 'This job may already have been accepted.');

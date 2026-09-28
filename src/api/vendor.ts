@@ -11,17 +11,27 @@ export type VehicleType =
 
 export type VendorStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 
+/*
+ * IMPORTANT:
+ * These values MUST match the bookings.status ENUM.
+ */
 export type JobStatus =
-  'pending' | 'accepted' | 'en_route' | 'in_progress' | 'completed' | 'cancelled' | 'expired';
+  | 'pending'
+  | 'searching'
+  | 'vendor_assigned'
+  | 'accepted'
+  | 'arriving'
+  | 'arrived'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+  | 'rejected'
+  | 'no_vendor';
 
 export interface BaseApiResponse {
   success: boolean;
   message?: string;
 }
-
-// ==========================================
-// Models & Payload Interfaces
-// ==========================================
 
 export interface LocationCoords {
   latitude: number;
@@ -31,67 +41,105 @@ export interface LocationCoords {
   accuracy?: number;
 }
 
+// ==========================================
+// Vendor Profile
+// ==========================================
+
 export interface VendorProfile {
   id: number;
   user_id: number;
   vendor_type: VendorType;
+
   business_name: string | null;
   phone: string | null;
   address: string | null;
   city: string | null;
   province: string | null;
   postal_code: string | null;
+
   latitude: number | null;
   longitude: number | null;
+
   bio: string | null;
   years_experience: number;
+
   status: VendorStatus;
   is_online: number;
+
   rating: number;
   total_reviews: number;
+
   created_at: string;
   updated_at: string;
+
   name?: string;
   email?: string;
   profile_picture?: string | null;
 }
 
+// ==========================================
+// Vehicle
+// ==========================================
+
 export interface VendorVehicle {
   id: number;
   vendor_id: number;
+
   vehicle_type: VehicleType;
   make: string;
   model: string;
+
   year: number | null;
   color: string | null;
   license_plate: string | null;
   registration_number: string | null;
+
   vehicle_image: string | null;
+
   is_primary: number;
   is_active: number;
+
   created_at: string;
   updated_at: string;
 }
 
+// ==========================================
+// Vendor Job
+// ==========================================
+
 export interface VendorJob {
   assignment_id: number;
   booking_id: number;
+
   assignment_status: string;
+
   offered_at: string;
   expires_at: string;
+
   booking_number: string;
+
   service_type: VendorType;
+
   booking_status: JobStatus;
+
   pickup_address?: string;
   pickup_latitude?: number;
   pickup_longitude?: number;
+
   destination_address?: string;
   destination_latitude?: number;
   destination_longitude?: number;
+
   problem_description?: string;
+
   estimated_price?: number;
+
   created_at: string;
 }
+
+// ==========================================
+// Dashboard
+// ==========================================
 
 export interface DashboardStats {
   today_earnings: number;
@@ -109,16 +157,19 @@ export interface EarningsSummary {
 export interface EarningHistoryItem {
   earning_id: number;
   job_id: number;
+
   gross_amount: number | string;
   platform_fee: number | string;
   net_earnings: number | string;
+
   created_at: string;
+
   service_type: VendorType;
   pickup_address: string;
 }
 
 // ==========================================
-// Request / Response DTOs
+// Requests / Responses
 // ==========================================
 
 export interface RegisterVendorPayload {
@@ -177,7 +228,9 @@ export interface VendorDashboardResponse extends BaseApiResponse {
     VendorProfile,
     'id' | 'vendor_type' | 'status' | 'is_online' | 'rating' | 'total_reviews' | 'name'
   >;
+
   stats: DashboardStats;
+
   available_jobs: VendorJob[];
 }
 
@@ -207,10 +260,9 @@ export interface RequestPayoutResponse extends BaseApiResponse {
 }
 
 // ==========================================
-// API Service Methods
+// Module 1: Profile
 // ==========================================
 
-// Module 1: Profile & Vehicle Management
 export async function registerVendor(
   payload: RegisterVendorPayload
 ): Promise<RegisterVendorResponse> {
@@ -229,7 +281,7 @@ export async function updateVendorProfile(
 ): Promise<BaseApiResponse> {
   return apiRequest<BaseApiResponse>('vendors/update-profile.php', {
     method: 'POST',
-    body: JSON.stringify(payload), // Stringify payload here
+    body: JSON.stringify(payload),
   });
 }
 
@@ -243,11 +295,16 @@ export async function addVehicle(payload: AddVehiclePayload): Promise<AddVehicle
 export async function deleteVehicle(vehicleId: number): Promise<BaseApiResponse> {
   return apiRequest<BaseApiResponse>('vendors/delete-vehicle.php', {
     method: 'POST',
-    body: JSON.stringify({ vehicle_id: vehicleId }),
+    body: JSON.stringify({
+      vehicle_id: vehicleId,
+    }),
   });
 }
 
-// Module 2: Dashboard, Location & Status Toggle
+// ==========================================
+// Module 2: Online / Location
+// ==========================================
+
 export async function toggleOnlineStatus(
   isOnline: boolean,
   location: Partial<LocationCoords> | null = null
@@ -263,7 +320,9 @@ export async function toggleOnlineStatus(
 }
 
 export async function updateVendorLocation(
-  data: { booking_id?: number } & LocationCoords
+  data: {
+    booking_id?: number;
+  } & LocationCoords
 ): Promise<BaseApiResponse> {
   return apiRequest<BaseApiResponse>('vendors/location.php', {
     method: 'POST',
@@ -275,7 +334,10 @@ export async function getVendorDashboard(): Promise<VendorDashboardResponse> {
   return apiRequest<VendorDashboardResponse>('vendors/dashboard.php');
 }
 
-// Module 3: Booking Engine & Job Requests
+// ==========================================
+// Module 3: Jobs
+// ==========================================
+
 export async function getVendorJobs(): Promise<GetIncomingOffersResponse> {
   return apiRequest<GetIncomingOffersResponse>('vendors/jobs.php');
 }
@@ -286,6 +348,7 @@ export async function respondToOffer(
   reason?: string
 ): Promise<RespondOfferResponse> {
   const endpoint = action === 'accept' ? 'vendors/accept-job.php' : 'vendors/reject-job.php';
+
   return apiRequest<RespondOfferResponse>(endpoint, {
     method: 'POST',
     body: JSON.stringify({
@@ -295,14 +358,18 @@ export async function respondToOffer(
   });
 }
 
-// Module 4: Job Execution & Status Progress
+// ==========================================
+// Module 4: Job Status
+// ==========================================
+
 export async function updateJobStatus(
   bookingId: number,
-  status: Extract<JobStatus, 'en_route' | 'in_progress' | 'completed' | 'cancelled'>,
+  status: Extract<JobStatus, 'arriving' | 'arrived' | 'in_progress' | 'completed' | 'cancelled'>,
   notes: string = ''
 ): Promise<UpdateJobStatusResponse> {
   return apiRequest<UpdateJobStatusResponse>('vendors/update-booking-status.php', {
     method: 'POST',
+
     body: JSON.stringify({
       booking_id: bookingId,
       status,
@@ -311,11 +378,18 @@ export async function updateJobStatus(
   });
 }
 
-export async function getJobDetails(bookingId: number): Promise<GetJobDetailsResponse> {
-  return apiRequest<GetJobDetailsResponse>(`jobs/details.php?id=${bookingId}`);
-}
+// ==========================================
+// Get Job Details
+// ==========================================
 
-// Module 5: Earnings & Payout Settlement
+// export async function getJobDetails(bookingId: number): Promise<GetJobDetailsResponse> {
+//   return apiRequest<GetJobDetailsResponse>(`jobs/progress.php?booking_id=${bookingId}`);
+// }
+
+// ==========================================
+// Earnings
+// ==========================================
+
 export async function getVendorEarnings(): Promise<GetEarningsResponse> {
   return apiRequest<GetEarningsResponse>('vendors/earnings.php');
 }
@@ -323,9 +397,15 @@ export async function getVendorEarnings(): Promise<GetEarningsResponse> {
 export async function requestVendorPayout(amount: number): Promise<RequestPayoutResponse> {
   return apiRequest<RequestPayoutResponse>('vendors/request-payout.php', {
     method: 'POST',
-    body: JSON.stringify({ amount }),
+    body: JSON.stringify({
+      amount,
+    }),
   });
 }
+
+// ==========================================
+// Set Online
+// ==========================================
 
 interface SetVendorOnlineResponse {
   success?: boolean;
@@ -338,6 +418,7 @@ export async function setVendorOnline(
 ): Promise<SetVendorOnlineResponse> {
   return apiRequest<SetVendorOnlineResponse>('/vendors/set-online.php', {
     method: 'POST',
+
     body: JSON.stringify({
       is_online: isOnline,
     }),
@@ -345,28 +426,26 @@ export async function setVendorOnline(
 }
 
 // ==========================================
-// Types & DTOs
+// Job Offers
 // ==========================================
 
-/* export interface JobOffer {
-  id: number;
-  booking_id: number;
-  vendor_id: number;
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
-  distance_km: number;
-  estimated_earnings: number;
-  expires_at: string;
-  created_at?: string;
-} */
 export interface JobOffer {
   offer_id: string | number;
+
   service_type: 'ride' | 'mechanic' | 'tow' | string;
+
   booking_number: string | number;
+
   distance_km: number | string;
+
   pickup_address?: string;
+
   destination_address?: string;
+
   problem_description?: string;
+
   estimated_earnings: number | string;
+
   expires_at: string;
 }
 
@@ -379,10 +458,6 @@ export interface RespondJobOfferResponse extends BaseApiResponse {
   offer_id?: number;
 }
 
-// ==========================================
-// API Methods
-// ==========================================
-
 export async function getJobOffers(): Promise<GetJobOffersResponse> {
   return apiRequest<GetJobOffersResponse>('/vendors/job-offers.php');
 }
@@ -390,6 +465,7 @@ export async function getJobOffers(): Promise<GetJobOffersResponse> {
 export async function acceptJobOffer(offerId: number): Promise<RespondJobOfferResponse> {
   return apiRequest<RespondJobOfferResponse>('/vendors/accept-offer.php', {
     method: 'POST',
+
     body: JSON.stringify({
       offer_id: offerId,
     }),
@@ -399,14 +475,20 @@ export async function acceptJobOffer(offerId: number): Promise<RespondJobOfferRe
 export async function declineJobOffer(offerId: number): Promise<RespondJobOfferResponse> {
   return apiRequest<RespondJobOfferResponse>('/vendors/decline-offer.php', {
     method: 'POST',
+
     body: JSON.stringify({
       offer_id: offerId,
     }),
   });
 }
 
+// ==========================================
+// Vendor Services
+// ==========================================
+
 export interface ServiceTypePayload {
   service_type: 'ride' | 'mechanic' | 'tow' | string;
+
   is_active: boolean;
 }
 
@@ -415,20 +497,105 @@ export async function updateVendorServices(
 ): Promise<BaseApiResponse> {
   return apiRequest('/vendors/update-services.php', {
     method: 'POST',
-    body: JSON.stringify({ services }),
+
+    body: JSON.stringify({
+      services,
+    }),
   });
 }
+
+// ==========================================
+// Simple Location Update
+// ==========================================
 
 export interface LocationUpdatePayload {
   latitude: number;
   longitude: number;
 }
 
-export async function updateLocation(
-  coords: LocationUpdatePayload
-): Promise<{ success: boolean; message: string }> {
+export async function updateLocation(coords: LocationUpdatePayload): Promise<{
+  success: boolean;
+  message: string;
+}> {
   return apiRequest('/vendors/update-location.php', {
     method: 'POST',
+
     body: JSON.stringify(coords),
   });
+}
+
+export interface BookingProgress {
+  id: number;
+  booking_number: string;
+  service_type: string;
+  status: JobStatus;
+
+  pickup_address?: string | null;
+  pickup_latitude?: number | string | null;
+  pickup_longitude?: number | string | null;
+
+  destination_address?: string | null;
+  destination_latitude?: number | string | null;
+  destination_longitude?: number | string | null;
+
+  problem_description?: string | null;
+
+  estimated_price?: number | string | null;
+  final_price?: number | string | null;
+
+  created_at: string;
+  accepted_at?: string | null;
+  arrived_at?: string | null;
+  service_started_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+
+  vendor_id?: number | null;
+  user_id?: number | null;
+
+  // CUSTOMER
+  customer_name?: string | null;
+  customer_email?: string | null;
+  customer_phone?: string | null;
+  customer_picture?: string | null;
+
+  // VENDOR
+  vendor_business_name?: string | null;
+  vendor_phone?: string | null;
+  vendor_rating?: number | string | null;
+  vendor_is_online?: number | null;
+
+  // VENDOR LOCATION
+  vendor_latitude?: number | string | null;
+  vendor_longitude?: number | string | null;
+  vendor_location_updated_at?: string | null;
+}
+
+export interface BookingEvent {
+  id: number;
+  event_type: string;
+  description: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  created_at: string;
+}
+
+export interface GetBookingProgressResponse extends BaseApiResponse {
+  booking: BookingProgress;
+  events: BookingEvent[];
+}
+
+export async function getBookingProgress(bookingId: number): Promise<GetBookingProgressResponse> {
+  return apiRequest<GetBookingProgressResponse>(`bookings/progress.php?booking_id=${bookingId}`);
+}
+
+export interface GetJobDetailsResponse extends BaseApiResponse {
+  data: {
+    booking: BookingProgress;
+    events: BookingEvent[];
+  };
+}
+
+export async function getJobDetails(bookingId: number): Promise<GetJobDetailsResponse> {
+  return apiRequest<GetJobDetailsResponse>(`vendors/progress.php?booking_id=${bookingId}`);
 }

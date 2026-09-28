@@ -83,3 +83,20 @@ export async function markMessagesRead(conversationId: number | string): Promise
     }),
   });
 }
+
+export async function getConversationForBooking(
+  bookingId: number | string
+): Promise<Conversation | null> {
+  const response = await getConversations();
+
+  if (!response.success) {
+    throw new Error(response.message || 'Unable to load conversations.');
+  }
+
+  return (
+    response.conversations?.find(
+      (conversation) =>
+        Number(conversation.booking_id) === Number(bookingId)
+    ) || null
+  );
+}

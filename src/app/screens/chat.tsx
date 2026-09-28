@@ -23,11 +23,13 @@ export default function ChatScreen(): React.JSX.Element {
     conversationId?: string;
     providerName?: string;
     serviceType?: string;
+    bookingNumber?: string;
   }>();
 
   const conversationId = params.conversationId;
   const providerName = params.providerName;
   const serviceType = params.serviceType;
+  const bookingNumber = params.bookingNumber;
 
   const { user } = useAuth();
 
@@ -205,8 +207,12 @@ export default function ChatScreen(): React.JSX.Element {
           <Text style={styles.title}>{providerName || 'Service Provider'}</Text>
           <View style={styles.subtitleRow}>
             <View style={styles.onlineBadge} />
-            <Text style={styles.subtitle}>
+            {/* <Text style={styles.subtitle}>
               Booking #{conversationId} {serviceType ? `• ${serviceType}` : ''}
+            </Text> */}
+            <Text style={styles.subtitle}>
+              Booking #{bookingNumber || conversationId}
+              {serviceType ? ` • ${serviceType}` : ''}
             </Text>
           </View>
         </View>
