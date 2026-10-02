@@ -49,7 +49,7 @@ import {
   type JobStatus,
   getJobDetails,
 } from '@/api/vendor';
-import { Conversation, getConversationForBooking, getConversations } from '@/services/chat';
+import { Conversation, getConversationForBooking } from '@/services/chat';
 
 type Job = BookingProgress;
 
@@ -71,7 +71,14 @@ const PRESET_RESPONSES = [
 export default function VendorJobScreen() {
   const router = useRouter();
 
-  const { id: bookingIdParam } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{
+    id?: string;
+    bookingId?: string;
+    booking_id?: string;
+  }>();
+
+  // Support links created by both the current jobs screen and older links.
+  const bookingIdParam = params.id ?? params.bookingId ?? params.booking_id;
 
   const bookingId = Number(bookingIdParam);
 
@@ -109,34 +116,12 @@ export default function VendorJobScreen() {
 
   const [unreadCount, setUnreadCount] = useState(0);
 
-  /* const loadConversation = useCallback(async () => {
+  const loadConversation = useCallback(async () => {
     if (!bookingId || Number.isNaN(bookingId)) {
+      setConversation(null);
       return;
     }
 
-    try {
-      setChatLoading(true);
-
-      const response = await getConversations();
-
-      if (!response.success) {
-        throw new Error(response.message || 'Unable to load conversations.');
-      }
-
-      const matchingConversation = response.conversations?.find(
-        (item) => Number(item.booking_id) === Number(bookingId)
-      );
-
-      setConversation(matchingConversation || null);
-    } catch (error) {
-      console.error('[Chat] Failed to load conversation:', error);
-      setConversation(null);
-    } finally {
-      setChatLoading(false);
-    }
-  }, [bookingId]); */
-
-  const loadConversation = useCallback(async () => {
     try {
       setChatLoading(true);
 
@@ -672,7 +657,7 @@ export default function VendorJobScreen() {
     }
 
     router.push({
-      pathname: './chat',
+      pathname: '/screens/chat',
       params: {
         conversationId: String(conversation.id),
         providerName: conversation.other_user_name || job?.customer_name || 'Customer',

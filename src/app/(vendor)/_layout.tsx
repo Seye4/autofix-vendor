@@ -15,10 +15,10 @@ export default function ProtectedLayout(): React.JSX.Element {
   useEffect(() => {
     if (!token) return;
 
-    registerForPushNotifications(token).catch(console.error);
+    registerForPushNotifications().catch(console.error);
   }, [token]);
 
-  // Calculate dynamic bottom padding so icons sit safely above Android buttons
+  // Calculate dynamic bottom padding so icons sit safely above Android buttons / home indicator
   const bottomInset = insets.bottom > 0 ? insets.bottom : 12;
   const tabBarHeight = Platform.OS === 'ios' ? 88 : 56 + bottomInset;
 
@@ -26,6 +26,10 @@ export default function ProtectedLayout(): React.JSX.Element {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Ensures any nested screen header automatically adds top padding for the notch/status bar
+        headerStyle: {
+          paddingTop: insets.top,
+        },
         tabBarActiveTintColor: '#2563EB',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarShowLabel: true,
@@ -61,12 +65,12 @@ export default function ProtectedLayout(): React.JSX.Element {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="chats"
         options={{
-          title: 'Chat',
+          title: 'Chats',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
+              name={focused ? 'chatbox-ellipses' : 'chatbox-ellipses-outline'}
               size={22}
               color={color}
             />

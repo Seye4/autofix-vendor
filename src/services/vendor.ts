@@ -96,3 +96,7 @@ export async function declineJobOffer<T = unknown>(offerId: string | number): Pr
     }),
   });
 }
+
+export async function getAllJobs<T = unknown>(): Promise<T> {
+  return request<T>('/vendors/all-jobs.php');
+}

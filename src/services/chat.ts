@@ -27,7 +27,8 @@ export interface Conversation {
 export interface ChatMessage {
   id: number;
   conversation_id: number;
-  sender_id: number;
+  sender_id?: number;
+  sender_user_id?: number;
   message: string;
   created_at: string;
   is_read?: boolean;

@@ -145,6 +145,7 @@ export interface DashboardStats {
   today_earnings: number;
   completed_jobs: number;
   pending_jobs: number;
+  active_jobs: number;
 }
 
 export interface EarningsSummary {
@@ -598,4 +599,12 @@ export interface GetJobDetailsResponse extends BaseApiResponse {
 
 export async function getJobDetails(bookingId: number): Promise<GetJobDetailsResponse> {
   return apiRequest<GetJobDetailsResponse>(`vendors/progress.php?booking_id=${bookingId}`);
+}
+
+export async function getAllJobs(): Promise<{
+  success: boolean;
+  message?: string;
+  data?: { jobs?: VendorJob[] };
+}> {
+  return apiRequest('/vendors/all-jobs.php');
 }

@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
 import { ChatMessage, getMessages, markMessagesRead, sendMessage } from '@/services/chat';
 import { useAuth } from '../../context/AuthContext';
@@ -141,7 +141,7 @@ export default function ChatScreen(): React.JSX.Element {
    */
 
   const renderMessage = ({ item }: ListRenderItemInfo<ChatMessage>): React.JSX.Element => {
-    const isMine = Number(item.sender_id) === Number(user?.id);
+    const isMine = Number(item.sender_id ?? item.sender_user_id) === Number(user?.id);
 
     return (
       <View style={[styles.messageRow, isMine ? styles.mineRow : styles.theirRow]}>
